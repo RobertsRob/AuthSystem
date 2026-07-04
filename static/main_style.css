@@ -140,3 +140,54 @@ body{
     background-color: #AAFC9C;
     color: #1e3e0e;
 }
+.form_middle{
+    /* background-color: #fff; */
+    margin: 0 auto;
+    padding-top: 20vh;
+    width: 28%;
+    text-align: left;
+}
+.center_text{
+    text-align: center;
+}
+.label_form{
+    font-size: 3vh;
+    color: #1e3e0e;
+}
+.input_form_field{
+    height: 2.5vh;
+    background-color: #CBFFCE;
+    border-radius: 2vh;
+    border: 1px solid #1e3e0e;
+    width: 12.5vw;
+    position: relative;
+    top: -0.2vh;
+    padding-left: 0.5vw;
+    margin-bottom: 0.5vh;
+}
+.capcha_placement{
+    position: relative;
+    top: 1vh;
+}
+.submit_button{
+    width: 10vw;
+    height: 5vh;
+    margin-right: 1vw;
+    margin-top: 2.5vh;
+    border: 1.5px solid #1e3e0e;
+    border-radius: 1vh;
+    font-size: 2.2vh;
+    background-color: #CBFFCE;
+    color: #1e3e0e;
+}
+.submit_button:disabled{
+    border: 1.5px solid #1e3e0e70;
+    color: #1e3e0e70;
+    background-color: #CBFFCE;
+}
+.submit_button:active:disabled{
+    background-color: #CBFFCE;
+}
+.submit_button:active{
+    background-color: #96bc99;
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <title>Login page</title>
+    <script>
+        function onCapchaSuccess(){document.getElementById("submit_button").disabled = false;}
+    </script>
+</head>
+<body>
+    <div class="full_screen">
+        <div class="form_middle">
+            <p class="main_text center_text">Login</p>
+            <form action="/login_submit" method="post">
+                <label for="username" class="label_form"> Enter username: </label>
+                <input type="text" id="username" class="input_form_field" placeholder="Username">
+                <br>
+                <label for="password" class="label_form"> Enter password: </label>
+                <input type="password" id="password" class="input_form_field" placeholder="Password">
+
+                <div class="h-captcha capcha_placement" data-sitekey="0ff041fe-1418-4c74-8bca-10882266eb3a" data-callback="onCapchaSuccess"></div>
+                <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+
+                <input type="submit" id="submit_button" class="submit_button" value="Log in" disabled>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
