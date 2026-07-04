@@ -14,12 +14,22 @@
             <div class="tw_pr"><a href="" class="link_head">Contacts</a></div>
         </div>
         <div class="auth_buttons">
-            <button class="signup_btn">Sign up</button>
-            <button class="login_btn">Log in</button>
+            <button class="signup_btn" onclick="window.location.href='/signup';">Sign up</button>
+            <button class="login_btn" onclick="window.location.href='/login';">Log in</button>
         </div>
     </div>
     <div class="content">
-        
+        <div class="middle_block">
+            <div class="half_middle_block">
+                <p class="main_text">This is a Home page!</p>
+                <p class="descript_text">Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit expedita autem eum cumque possimus qui id! Laudantium saepe et aut, similique, exercitationem qui officia eaque eligendi iste nam est! Impedit. Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat, rem at nesciunt consectetur, perferendis nulla impedit nemo sed consequuntur dolore similique? Deserunt laborum sed excepturi. Odio aperiam quidem iste enim?</p>
+                <button class="main_button_prices" onclick="window.location.href='/signup';">Check out our prices</button>
+                <button class="main_button_free" onclick="window.location.href='/signup';">Try for free ➡</button>
+            </div>
+            <div class="half_middle_block">
+                <img src="{{ url_for('static', filename='plants_img.webp') }}" alt="" class="img_content">
+            </div>
+        </div>
     </div>
 </body>
 </html>
