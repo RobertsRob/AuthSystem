@@ -13,6 +13,10 @@
     <div class="full_screen">
         <div class="form_middle">
             <p class="main_text center_text">Sign up</p>
+            {% if error %}
+                <p class="text_upper">{{ error }}</p>
+            {% endif %}
+            
             <form action="/signup_submit" method="POST">
                 <label for="username" class="label_form"> Enter username: </label>
                 <input type="text" id="username" name="username" class="input_form_field" placeholder="Username">

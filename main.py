@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, render_template, request, redirect, url_for
 import requests
 from dotenv import load_dotenv
@@ -7,9 +8,9 @@ import psycopg
 load_dotenv()
 app = Flask(__name__)
 
-def safe_render_template(template_file):
+def safe_render_template(template_file, jinja_info=None):
     try:
-        return render_template(template_file)
+        return render_template(template_file, **jinja_info)
     except:
         return render_template("error.html")
 
@@ -59,7 +60,8 @@ def login():
 
 @app.route("/signup")
 def signup():
-    return safe_render_template("signup.html")
+    error = request.args.get("error")
+    return safe_render_template("signup.html", {"error" : error})
 
 @app.route("/login_submit", methods=["POST"])
 def login_submit():
@@ -98,12 +100,23 @@ def signup_submit():
     email = request.form.get("email")
     password = request.form.get("password")
 
-    conn, cur = connect_to_data_base()
-
     # Check whether user data is correct (NEEDS IMPLEMENTATION)
 
-    cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (username, email, password))
+    if len(username) <= 5:
+        return redirect(url_for('signup', error="Username is too short"))
+    if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$', email):
+        return redirect(url_for('signup', error="Email is not valid"))
+    if len(password) < 8:
+        return redirect(url_for('signup', error="Password id too short"))
 
+    conn, cur = connect_to_data_base()
+
+    cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+
+    if cur.fetchone() is not None:
+        return redirect(url_for('signup', error="Username is already in use"))
+
+    cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (username, email, password))
     conn.commit()
     conn.close()
     
