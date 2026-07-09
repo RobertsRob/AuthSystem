@@ -191,3 +191,6 @@ body{
 .submit_button:active{
     background-color: #96bc99;
 }
+.text_under{
+    font-size: 1.9vh;
+}

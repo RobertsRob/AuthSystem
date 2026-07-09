@@ -12,20 +12,28 @@
 <body>
     <div class="full_screen">
         <div class="form_middle">
-            <p class="main_text center_text">Log in</p>
-            <form action="/login_submit" method="POST">
+            <p class="main_text center_text">Sign up</p>
+            <form action="/signup_submit" method="POST">
                 <label for="username" class="label_form"> Enter username: </label>
                 <input type="text" id="username" name="username" class="input_form_field" placeholder="Username">
                 <br>
+                <label for="email" class="label_form"> Enter email: </label>
+                <input type="email" id="email" name="email" class="input_form_field" placeholder="Email">
+                <br>
                 <label for="password" class="label_form"> Enter password: </label>
                 <input type="password" id="password" name="password" class="input_form_field" placeholder="Password">
+                <br>
+                <label for="password_repeat" class="label_form"> Repeat password: </label>
+                <input type="password" id="password_repeat" class="input_form_field" placeholder="Repeated password">
 
                 <div class="h-captcha capcha_placement" data-sitekey="0ff041fe-1418-4c74-8bca-10882266eb3a" data-callback="onCapchaSuccess"></div>
                 <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
-                <input type="submit" id="submit_button" class="submit_button" value="Log in" disabled>
+                <input type="submit" id="submit_button" class="submit_button" value="Sign up" disabled>
             </form>
-            <p class="text_under">Don't have an account <a href="/signup">Sign up</a></p>
+
+            <p class="text_under">Already have an account <a href="/login">Log in</a></p>
+
         </div>
     </div>
 </body>
