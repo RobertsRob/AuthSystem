@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <title>User page</title>
+</head>
+<body>
+    <div class="header">
+        <div class="link_part">
+            <div class="tw_pr"><a href="" class="link_head">About us</a></div>
+            <div class="tw_pr"><a href="" class="link_head">Prices</a></div>
+            <div class="tw_pr"><a href="" class="link_head">Contacts</a></div>
+        </div>
+        <div class="auth_buttons">
+            {% if username %}
+                {{ username }}
+            {% endif %}
+        </div>
+    </div>
+    <div class="content">
+        <div class="middle_block">
+            <div class="display_block">
+                <p class="main_text">This is a {{ username }} page!</p> <br>
+                <p class="descript_text">User id: {{ user_id }}</p> <br>
+                <p class="descript_text">Email: {{ email }}</p> <br>
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>

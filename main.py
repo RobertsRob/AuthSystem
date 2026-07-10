@@ -1,16 +1,20 @@
 import os
 import re
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, make_response
 import requests
 from dotenv import load_dotenv
 import psycopg
+import jwt
+from datetime import datetime, timedelta
 
 load_dotenv()
 app = Flask(__name__)
 
 def safe_render_template(template_file, jinja_info=None):
     try:
-        return render_template(template_file, **jinja_info)
+        if jinja_info:
+            return render_template(template_file, **jinja_info)
+        return render_template(template_file)
     except:
         return render_template("error.html")
 
@@ -119,10 +123,34 @@ def signup_submit():
     cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (username, email, password))
     conn.commit()
     conn.close()
+
+    response = make_response(redirect(url_for("home_user", username=username)))
+
+    jwtoken = jwt.encode({"username" : username, "exp" : datetime.utcnow() + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
+
+    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", max_age=3600)
     
-    return redirect(url_for('home_user'))
+    return response
 
+# {os.getenv('JWTSECRET')}
 
-@app.route("/home_user")
-def home_user():
-    return safe_render_template("home_user.html")
+@app.route("/home_user/<username>")
+def home_user(username):
+
+    jwtoken = request.cookies.get("access_token")
+    data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
+    
+    if data.username != username:
+        return safe_render_template("error.html")
+
+    conn, cur = connect_to_data_base()
+    cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+    user = cur.fetchone()
+
+    user_id = user[0]
+    email = user[2]
+    encrypted_psw = user[3]
+
+    conn.close()
+
+    return safe_render_template("home_user.html", {"user_id" : user_id, "username" : username, "email" : email})

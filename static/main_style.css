@@ -198,3 +198,7 @@ body{
 .text_under{
     font-size: 1.9vh;
 }
+.display_block{
+    width: 100%;
+    display: block;
+}
