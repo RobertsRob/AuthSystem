@@ -5,7 +5,8 @@ import requests
 from dotenv import load_dotenv
 import psycopg
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 app = Flask(__name__)
@@ -60,7 +61,8 @@ def home():
 
 @app.route("/login")
 def login():
-    return safe_render_template("login.html")
+    error = request.args.get("error")
+    return safe_render_template("login.html", {"error" : error})
 
 @app.route("/signup")
 def signup():
@@ -80,15 +82,29 @@ def login_submit():
     username = request.form.get("username")
     password = request.form.get("password")
 
+    if not username or not password:
+        return redirect(url_for('login', error="Missing fields"))
+
     conn, cur = connect_to_data_base()
 
     cur.execute("SELECT * FROM users WHERE name = (%s)", (username,))
-    print(cur.fetchall())
-
-    conn.commit()
+    user = cur.fetchone()
+    cur.close()
     conn.close()
+
+    if user is None:
+        return redirect(url_for('login', error="Username or password was incorect"))
+
+    if check_password_hash(user[3], password):
+        response = make_response(redirect(url_for("home_user")))
+        jwtoken = jwt.encode({"user_id" : user[0], "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
+        response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=False, max_age=3600)
+        return response
     
-    return "Login ok"
+    return redirect(url_for('login', error="Username or password was incorect"))
+    
+    
+
 
 @app.route("/signup_submit", methods=["POST"])
 def signup_submit():
@@ -103,8 +119,7 @@ def signup_submit():
     username = request.form.get("username")
     email = request.form.get("email")
     password = request.form.get("password")
-
-    # Check whether user data is correct (NEEDS IMPLEMENTATION)
+    hashed_password = generate_password_hash(password)
 
     if len(username) <= 5:
         return redirect(url_for('signup', error="Username is too short"))
@@ -120,37 +135,35 @@ def signup_submit():
     if cur.fetchone() is not None:
         return redirect(url_for('signup', error="Username is already in use"))
 
-    cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (username, email, password))
+    cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, hashed_password))
+    user_id = cur.fetchone()[0]
     conn.commit()
+    cur.close()
     conn.close()
 
-    response = make_response(redirect(url_for("home_user", username=username)))
-
-    jwtoken = jwt.encode({"username" : username, "exp" : datetime.utcnow() + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
-
-    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", max_age=3600)
+    response = make_response(redirect(url_for("home_user")))
+    jwtoken = jwt.encode({"user_id" : user_id, "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
+    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=False,  max_age=3600)
     
     return response
 
 # {os.getenv('JWTSECRET')}
 
-@app.route("/home_user/<username>")
-def home_user(username):
+@app.route("/home_user")
+def home_user():
 
     jwtoken = request.cookies.get("access_token")
     data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
-    
-    if data.username != username:
-        return safe_render_template("error.html")
 
     conn, cur = connect_to_data_base()
-    cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+    cur.execute("SELECT * FROM users WHERE id = (%s)", (data["user_id"],)) 
     user = cur.fetchone()
 
-    user_id = user[0]
+    username = user[1]
     email = user[2]
     encrypted_psw = user[3]
 
+    cur.close()
     conn.close()
 
-    return safe_render_template("home_user.html", {"user_id" : user_id, "username" : username, "email" : email})
+    return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email})
