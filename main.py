@@ -63,6 +63,16 @@ def verify_token(token):
         j.get("error-codes", []),
     )
 
+def alreay_logged_in():
+    jwtoken = request.cookies.get("access_token")
+    try:
+        jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
+        return True
+    except jwt.InvalidTokenError:
+        pass
+    return False
+
+
 
 @app.route("/")
 def home():
@@ -70,11 +80,17 @@ def home():
 
 @app.route("/login")
 def login():
+    if alreay_logged_in():
+        return redirect(url_for("home_user"))
+    
     error = request.args.get("error")
     return safe_render_template("login.html", {"error" : error})
 
 @app.route("/signup")
 def signup():
+    if alreay_logged_in():
+        return redirect(url_for("home_user"))
+
     error = request.args.get("error")
     return safe_render_template("signup.html", {"error" : error})
 
