@@ -1,15 +1,30 @@
 import os
 import re
-from flask import Flask, render_template, request, redirect, url_for, make_response
+from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import requests
 from dotenv import load_dotenv
 import psycopg
 import jwt
 from datetime import datetime, timedelta, UTC
 from werkzeug.security import generate_password_hash, check_password_hash
+from authlib.integrations.flask_client import OAuth
 
 load_dotenv()
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+oauth = OAuth(app)
+
+try:
+    google = oauth.register(
+        name="google",
+        client_id=os.getenv("GOOGLE_AUTH_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_AUTH_CLIENT_SECRET"),
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={ "scope": "openid email profile" }
+    )
+except Exception as e:
+    print(f"Failed to connect to google auth: {e}")
 
 def safe_render_template(template_file, jinja_info=None):
     try:
@@ -174,6 +189,49 @@ def signup_submit():
     
     return response
 
+@app.route("/google_auth")
+def google_auth():
+    return google.authorize_redirect(
+        url_for("google_callback", _external=True)
+    )
+
+@app.route("/auth/google/callback")
+def google_callback():
+    
+    token = google.authorize_access_token()
+    user_info = token["userinfo"]
+    print(user_info)
+    return "success"
+
+    username = user_info["name"]
+    email = user_info["email"]
+
+    if len(username) <= 5:
+        return redirect(url_for('signup', error="Username is too short"))
+    if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$', email):
+        return redirect(url_for('signup', error="Email is not valid"))
+
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+
+        if cur.fetchone() is not None:
+            return redirect(url_for('signup', error="Username is already in use"))
+
+        cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, None))
+        user_id = cur.fetchone()[0]
+    finally:
+        if conn:
+            conn.commit()
+        close_database(conn, cur)
+
+    response = make_response(redirect(url_for("home_user")))
+    jwtoken = jwt.encode({"user_id" : user_id, "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
+    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=not app.debug,  max_age=3600)
+    
+    return response
+
+
 # {os.getenv('JWTSECRET')}
 
 @app.route("/home_user")
@@ -197,3 +255,11 @@ def home_user():
     encrypted_psw = user[3]
 
     return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email})
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    response = redirect(url_for("home"))
+    response.delete_cookie("access_token")
+    return response
