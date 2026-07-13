@@ -19,24 +19,33 @@ def safe_render_template(template_file, jinja_info=None):
     except:
         return render_template("error.html")
 
-def connect_to_data_base():
-    conn = psycopg.connect(
-        dbname="postgres",
-        user="postgres",
-        password=f"{os.getenv('POSTGRES')}",
-        host="localhost",
-        port=5432
-    )
-    cur = conn.cursor()
+def connect_to_database():
+    conn, cur = (None, None)
+    try:
+        conn = psycopg.connect(
+            dbname="postgres",
+            user="postgres",
+            password=f"{os.getenv('POSTGRES')}",
+            host="localhost",
+            port=5432
+        )
+        cur = conn.cursor()
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS users (
-       id SERIAL PRIMARY KEY,
-       name TEXT NOT NULL UNIQUE,
-       email TEXT NOT NULL,
-       password TEXT NOT NULL)
-    """)
-    conn.commit()
+        cur.execute("""CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        email TEXT NOT NULL,
+        password TEXT NOT NULL)
+        """)
+    finally:
+        conn.commit()
     return (conn, cur)
+
+def close_database(conn, cur):
+    if cur:
+        cur.close()
+    if conn:
+        conn.close()
 
 def verify_token(token):
     data = {
@@ -85,12 +94,13 @@ def login_submit():
     if not username or not password:
         return redirect(url_for('login', error="Missing fields"))
 
-    conn, cur = connect_to_data_base()
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE name = (%s)", (username,))
+        user = cur.fetchone()
+    finally:
+        close_database(conn, cur)
 
-    cur.execute("SELECT * FROM users WHERE name = (%s)", (username,))
-    user = cur.fetchone()
-    cur.close()
-    conn.close()
 
     if user is None:
         return redirect(url_for('login', error="Username or password was incorect"))
@@ -98,7 +108,7 @@ def login_submit():
     if check_password_hash(user[3], password):
         response = make_response(redirect(url_for("home_user")))
         jwtoken = jwt.encode({"user_id" : user[0], "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
-        response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=False, max_age=3600)
+        response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=not app.debug, max_age=3600)
         return response
     
     return redirect(url_for('login', error="Username or password was incorect"))
@@ -128,22 +138,23 @@ def signup_submit():
     if len(password) < 8:
         return redirect(url_for('signup', error="Password id too short"))
 
-    conn, cur = connect_to_data_base()
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
 
-    cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+        if cur.fetchone() is not None:
+            return redirect(url_for('signup', error="Username is already in use"))
 
-    if cur.fetchone() is not None:
-        return redirect(url_for('signup', error="Username is already in use"))
-
-    cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, hashed_password))
-    user_id = cur.fetchone()[0]
-    conn.commit()
-    cur.close()
-    conn.close()
+        cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, hashed_password))
+        user_id = cur.fetchone()[0]
+    finally:
+        if conn:
+            conn.commit()
+        close_database(conn, cur)
 
     response = make_response(redirect(url_for("home_user")))
     jwtoken = jwt.encode({"user_id" : user_id, "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
-    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=False,  max_age=3600)
+    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=not app.debug,  max_age=3600)
     
     return response
 
@@ -153,17 +164,20 @@ def signup_submit():
 def home_user():
 
     jwtoken = request.cookies.get("access_token")
-    data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
+    try:
+        data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return redirect(url_for("login"))
 
-    conn, cur = connect_to_data_base()
-    cur.execute("SELECT * FROM users WHERE id = (%s)", (data["user_id"],)) 
-    user = cur.fetchone()
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE id = (%s)", (data["user_id"],)) 
+        user = cur.fetchone()
+    finally:
+        close_database(conn, cur)
 
     username = user[1]
     email = user[2]
     encrypted_psw = user[3]
-
-    cur.close()
-    conn.close()
 
     return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email})
