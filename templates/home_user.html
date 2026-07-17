@@ -16,8 +16,8 @@
         <div class="auth_buttons">
             {% if username %}
                 {{ username }}
-                <a href="/logout"><img class="logout_button" src="{{ url_for('static', filename='img/logout_button.png') }}" alt="logout_button"></a>
             {% endif %}
+            <a href="/logout"><img class="logout_button" src="{{ url_for('static', filename='img/logout_button.png') }}" alt="logout_button"></a>
         </div>
     </div>
     <div class="content">
@@ -26,6 +26,8 @@
                 <p class="main_text">This is a {{ username }} page!</p> <br>
                 <p class="descript_text">User id: {{ user_id }}</p> <br>
                 <p class="descript_text">Email: {{ email }}</p> <br>
+                <p class="descript_text">Google id: {{ google_id }}</p> <br>
+                <p class="descript_text">Created at: {{ created_at }}</p> <br>
             </div>
             
         </div>

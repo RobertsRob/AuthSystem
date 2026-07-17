@@ -117,10 +117,10 @@ def login_submit():
     captcha_token = request.form.get("h-captcha-response")
     
     if not captcha_token:
-        return "Please complete CAPTCHA", 400
+        return redirect(url_for('login', error="Please complete CAPTCHA"))
     
     if not verify_token(captcha_token):
-        return "CAPTCHA failed", 400
+        return redirect(url_for('login', error="CAPTCHA failed"))
     
     username = request.form.get("username")
     password = request.form.get("password")
@@ -142,7 +142,7 @@ def login_submit():
     if check_password_hash(user[3], password):
         response = make_response(redirect(url_for("home_user")))
         jwtoken = jwt.encode({"user_id" : user[0], "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
-        response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=not app.debug, max_age=3600)
+        response.set_cookie("access_token", jwtoken, httponly=True, samesite="Lax", secure=not app.debug, max_age=3600)
         return response
     
     return redirect(url_for('login', error="Username or password was incorect"))
@@ -155,10 +155,10 @@ def signup_submit():
     captcha_token = request.form.get("h-captcha-response")
     
     if not captcha_token:
-        return "Please complete CAPTCHA", 400
+        return redirect(url_for('signup', error="Please complete CAPTCHA"))
     
     if not verify_token(captcha_token):
-        return "CAPTCHA failed", 400
+        return redirect(url_for('signup', error="CAPTCHA failed"))
     
     username = request.form.get("username")
     email = request.form.get("email")
@@ -179,7 +179,7 @@ def signup_submit():
         if cur.fetchone() is not None:
             return redirect(url_for('signup', error="Username is already in use"))
 
-        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, hashed_password))
+        cur.execute("INSERT INTO users (username, email, password, google_id) VALUES (%s, %s, %s, %s) RETURNING id", (username, email, hashed_password, None))
         user_id = cur.fetchone()[0]
     finally:
         if conn:
@@ -188,7 +188,7 @@ def signup_submit():
 
     response = make_response(redirect(url_for("home_user")))
     jwtoken = jwt.encode({"user_id" : user_id, "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
-    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=not app.debug,  max_age=3600)
+    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Lax", secure=not app.debug,  max_age=3600)
     
     return response
 
@@ -204,25 +204,21 @@ def google_callback():
     token = google.authorize_access_token()
     user_info = token["userinfo"]
     print(user_info)
-    return "success"
+    # return "success"
     
-    username = user_info["name"]
+    google_id = user_info["sub"]
     email = user_info["email"]
-
-    if len(username) <= 5:
-        return redirect(url_for('signup', error="Username is too short"))
-    if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$', email):
-        return redirect(url_for('signup', error="Email is not valid"))
 
     try:
         conn, cur = connect_to_database()
-        cur.execute("SELECT * FROM users WHERE username = (%s)", (username,)) 
+        cur.execute("SELECT * FROM users WHERE google_id = (%s)", (google_id,)) 
+        user = cur.fetchone()
 
-        if cur.fetchone() is not None:
-            return redirect(url_for('signup', error="Username is already in use"))
-
-        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, None))
-        user_id = cur.fetchone()[0]
+        if user is not None: # Already exists -> login
+            user_id = user[0]
+        else:
+            cur.execute("INSERT INTO users (username, email, password, google_id) VALUES (%s, %s, %s, %s) RETURNING id", (None, email, None, google_id))
+            user_id = cur.fetchone()[0]
     finally:
         if conn:
             conn.commit()
@@ -230,7 +226,7 @@ def google_callback():
 
     response = make_response(redirect(url_for("home_user")))
     jwtoken = jwt.encode({"user_id" : user_id, "exp" : datetime.now(UTC) + timedelta(hours=1)}, os.getenv('JWTSECRET'), algorithm="HS256")
-    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Strict", secure=not app.debug,  max_age=3600)
+    response.set_cookie("access_token", jwtoken, httponly=True, samesite="Lax", secure=not app.debug,  max_age=3600)
     
     return response
 
@@ -241,11 +237,12 @@ def google_callback():
 def home_user():
 
     jwtoken = request.cookies.get("access_token")
+    
     try:
         data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
     except jwt.InvalidTokenError:
         return redirect(url_for("login"))
-
+    
     try:
         conn, cur = connect_to_database()
         cur.execute("SELECT * FROM users WHERE id = (%s)", (data["user_id"],)) 
@@ -256,8 +253,10 @@ def home_user():
     username = user[1]
     email = user[2]
     encrypted_psw = user[3]
+    google_id = user[4]
+    created_at = user[5]
 
-    return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email})
+    return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "google_id" : google_id, "created_at" : created_at})
 
 
 @app.route("/logout")
