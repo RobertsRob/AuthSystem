@@ -48,9 +48,12 @@ def connect_to_database():
 
         cur.execute("""CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        email TEXT NOT NULL,
-        password TEXT NOT NULL)
+        username TEXT UNIQUE,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT,
+        google_id TEXT UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
         """)
     finally:
         conn.commit()
@@ -127,7 +130,7 @@ def login_submit():
 
     try:
         conn, cur = connect_to_database()
-        cur.execute("SELECT * FROM users WHERE name = (%s)", (username,))
+        cur.execute("SELECT * FROM users WHERE username = (%s)", (username,))
         user = cur.fetchone()
     finally:
         close_database(conn, cur)
@@ -171,12 +174,12 @@ def signup_submit():
 
     try:
         conn, cur = connect_to_database()
-        cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+        cur.execute("SELECT * FROM users WHERE username = (%s)", (username,)) 
 
         if cur.fetchone() is not None:
             return redirect(url_for('signup', error="Username is already in use"))
 
-        cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, hashed_password))
+        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, hashed_password))
         user_id = cur.fetchone()[0]
     finally:
         if conn:
@@ -202,7 +205,7 @@ def google_callback():
     user_info = token["userinfo"]
     print(user_info)
     return "success"
-
+    
     username = user_info["name"]
     email = user_info["email"]
 
@@ -213,12 +216,12 @@ def google_callback():
 
     try:
         conn, cur = connect_to_database()
-        cur.execute("SELECT * FROM users WHERE name = (%s)", (username,)) 
+        cur.execute("SELECT * FROM users WHERE username = (%s)", (username,)) 
 
         if cur.fetchone() is not None:
             return redirect(url_for('signup', error="Username is already in use"))
 
-        cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, None))
+        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING id", (username, email, None))
         user_id = cur.fetchone()[0]
     finally:
         if conn:
