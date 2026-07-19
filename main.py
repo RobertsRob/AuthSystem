@@ -38,10 +38,10 @@ def connect_to_database():
     conn, cur = (None, None)
     try:
         conn = psycopg.connect(
-            dbname="postgres",
-            user="postgres",
-            password=f"{os.getenv('POSTGRES')}",
-            host="localhost",
+            dbname=os.getenv('POSTGRES_DB'),
+            user=os.getenv('POSTGRES_USER'),
+            password=os.getenv('POSTGRES_PASSWORD'),
+            host=os.getenv("POSTGRES_HOST", "localhost"),
             port=5432
         )
         cur = conn.cursor()

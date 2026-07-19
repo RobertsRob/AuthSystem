@@ -1,0 +1,5 @@
+How to run project:
+docker compose up --build
+
+How to back up db:
+docker compose exec db pg_dump -U {user} {db_name} > backup.sql
