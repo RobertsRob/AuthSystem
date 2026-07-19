@@ -8,7 +8,7 @@ ENDPOINTS = [
     ("GET", "/signup_submit", 405),
     ("GET", "/home_user", 302),
     ("GET", "/auth/google/callback", 405),
-    ("GET", "/auth/google/logout", 302),
+    ("GET", "/logout", 302),
 ]
 
 @pytest.mark.parametrize("method,path,expected_status", ENDPOINTS)
