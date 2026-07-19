@@ -44,17 +44,18 @@ jobs:
       
       - name: Verify cloudflared
         run: cloudflared --version
+      
+      - name: Fix DNS resolution for cloudflared
+        run: |
+          echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+          echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
 
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          sed -i 's/\r$//' ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-        
-      - name: Fix DNS resolution for cloudflared
-        run: |
-          echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
-          echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
 
       - name: Deploy via SSH through Cloudflare Tunnel
         run: |
