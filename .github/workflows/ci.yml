@@ -41,12 +41,20 @@ jobs:
           curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
           chmod +x cloudflared
           sudo mv cloudflared /usr/local/bin/
+      
+      - name: Verify cloudflared
+        run: cloudflared --version
 
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+        
+      - name: Fix DNS resolution for cloudflared
+        run: |
+          echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+          echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
 
       - name: Deploy via SSH through Cloudflare Tunnel
         run: |
