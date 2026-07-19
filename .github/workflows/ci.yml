@@ -64,5 +64,5 @@ jobs:
               -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }}" \
               -i ~/.ssh/id_ed25519 \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "cd ${{ secrets.DEPLOY_PATH }} && git pull origin main && docker compose up -d --build"
+              "cd ${{ secrets.DEPLOY_PATH }} && git pull origin main && docker compose up -d --build --force-recreate"
 
