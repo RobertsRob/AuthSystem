@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  
+jobs:
+  test:
+    run-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Py
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Test code
+      run: pytest
+
+  
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install cloudflared
+        run: |
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Deploy via SSH through Cloudflare Tunnel
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }}" \
+              -i ~/.ssh/id_ed25519 \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "cd ${{ secrets.DEPLOY_PATH }} && git pull origin main && docker compose up -d --build"
+
