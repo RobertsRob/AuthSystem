@@ -72,6 +72,17 @@ jobs:
           sleep 3
           echo "If no error above, tunnel connection itself works"
 
+      - name: Inspect key file bytes
+        run: |
+          echo "--- Byte count ---"
+          wc -c ~/.ssh/id_ed25519
+          echo "--- Line count ---"
+          wc -l ~/.ssh/id_ed25519
+          echo "--- First 5 bytes as hex ---"
+          head -c 5 ~/.ssh/id_ed25519 | xxd
+          echo "--- Does it contain literal backslash-n instead of real newlines? ---"
+          grep -c '\\n' ~/.ssh/id_ed25519 || echo "no literal \\n found (good)"
+
       - name: Test SSH connection only (no deploy command)
         run: |
           ssh -o StrictHostKeyChecking=no \
