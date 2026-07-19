@@ -57,11 +57,48 @@ jobs:
           sed -i 's/\r$//' ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-      - name: Deploy via SSH through Cloudflare Tunnel
+      - name: Check key file is valid
+        run: |
+          echo "--- First/last lines ---"
+          head -n 1 ~/.ssh/id_ed25519
+          tail -n 1 ~/.ssh/id_ed25519
+          echo "--- Deriving public key from private key ---"
+          ssh-keygen -y -f ~/.ssh/id_ed25519 -P "" || echo "KEY IS INVALID"
+
+      - name: Test cloudflared can reach the tunnel
+        run: |
+          timeout 10 cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }} --url http://localhost:9999 &
+          sleep 3
+          echo "If no error above, tunnel connection itself works"
+
+      - name: Test SSH connection only (no deploy command)
         run: |
           ssh -o StrictHostKeyChecking=no \
               -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }}" \
               -i ~/.ssh/id_ed25519 \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-              "cd ${{ secrets.DEPLOY_PATH }} && git pull origin main && docker compose up -d --build"
+              "echo SSH LOGIN SUCCEEDED && whoami && pwd"
+
+      - name: Test git pull only
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }}" \
+              -i ~/.ssh/id_ed25519 \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "cd ${{ secrets.DEPLOY_PATH }} && git pull origin main"
+
+      - name: Deploy (docker rebuild)
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }}" \
+              -i ~/.ssh/id_ed25519 \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "cd ${{ secrets.DEPLOY_PATH }} && docker compose up -d --build"
+      # - name: Deploy via SSH through Cloudflare Tunnel
+      #   run: |
+      #     ssh -o StrictHostKeyChecking=no \
+      #         -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.SERVER_HOST }}" \
+      #         -i ~/.ssh/id_ed25519 \
+      #         ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+      #         "cd ${{ secrets.DEPLOY_PATH }} && git pull origin main && docker compose up -d --build"
 
