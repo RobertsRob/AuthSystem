@@ -21,7 +21,7 @@ try:
         client_id=os.getenv("GOOGLE_AUTH_CLIENT_ID"),
         client_secret=os.getenv("GOOGLE_AUTH_CLIENT_SECRET"),
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-        client_kwargs={ "scope": "openid email profile" }
+        client_kwargs={ "scope": "openid email profile", "response_mode": "form_post", }
     )
 except Exception as e:
     print(f"Failed to connect to google auth: {e}")
@@ -198,7 +198,7 @@ def google_auth():
         url_for("google_callback", _external=True)
     )
 
-@app.route("/auth/google/callback")
+@app.route("/auth/google/callback", methods=["POST"])
 def google_callback():
     
     token = google.authorize_access_token()
