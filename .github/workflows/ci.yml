@@ -31,6 +31,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    environment: CI/CD env
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,16 +47,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-
-      - name: Debug secrets are set
-        run: |
-          echo "SERVER_HOST length: ${#SERVER_HOST}"
-          echo "SERVER_USER length: ${#SERVER_USER}"
-          echo "DEPLOY_PATH length: ${#DEPLOY_PATH}"
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
 
       - name: Deploy via SSH through Cloudflare Tunnel
         run: |
