@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
     <title>Settings</title>
 </head>
 <body>
     <div class="header">
         <div class="link_part">
-            <div class="tw_pr"><a href="/home_user" class="link_head">← Back</a></div>
         </div>
         <div class="auth_buttons">
             {% if username %}
@@ -21,12 +21,17 @@
         </div>
     </div>
     <div class="content">
-        <div class="middle_block">
+        <div class="left_side_h">
+            <p class="menu_text_left_side">Settings</p>
+            <div class="left_side_link_d"><a class="left_side_link" href="/home_user">Landing page</a></div> <div class="line_hor"></div>
+            <div class="left_side_link_d"><a class="left_side_link" href="">Dashboard</a></div> <div class="line_hor"></div>
+            <div class="left_side_link_d"><a class="left_side_link" href="/settings">Settings</a></div> <div class="line_hor"></div>
+        </div>
+        <div class="middle_block_h">
             <div class="display_block">
-                <p class="main_text">This is a {{ username }} settings page!</p> <br>
+                <p class="main_text">This is a {% if username %} {{ username }} {% else %} Google Auth {% endif %} settings page!</p> <br>
                 <p class="descript_text">User id: {{ user_id }}</p> <br>
                 <p class="descript_text">Email: {{ email }}</p> <br>
-                <!-- <p class="descript_text">Google id: {{ google_id }}</p> <br> -->
                 <p class="descript_text">Created at: {{ created_at }}</p> <br>
             </div>
             

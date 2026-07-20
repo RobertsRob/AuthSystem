@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
     <title>User page</title>
 </head>
 <body>
@@ -22,19 +23,18 @@
     </div>
     <div class="content">
         <div class="left_side_h">
-            <a href="">Dashboard</a> <br>
-            <a href="">Second page</a> <br>
-            <a href="/settings">Settings</a> <br>
+            <p class="menu_text_left_side">Landing page</p>
+            <div class="left_side_link_d"><a class="left_side_link" href="">Landing page</a></div> <div class="line_hor"></div>
+            <div class="left_side_link_d"><a class="left_side_link" href="">Dashboard</a></div> <div class="line_hor"></div>
+            <div class="left_side_link_d"><a class="left_side_link" href="/settings">Settings</a></div> <div class="line_hor"></div>
         </div>
         <div class="middle_block_h">
             <div class="display_block">
-                <p class="main_text">This is a {{ username }} page!</p> <br>
+                <p class="main_text">This is a {% if username %} {{ username }} {% else %} Google Auth {% endif %} page!</p> <br>
                 <p class="descript_text">User id: {{ user_id }}</p> <br>
                 <p class="descript_text">Email: {{ email }}</p> <br>
                 <p class="descript_text">Created at: {{ created_at }}</p> <br>
             </div>
-
-            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
             
         </div>
     </div>
