@@ -26,10 +26,10 @@
             
             <form action="/login_submit" method="POST">
                 <label for="username" class="label_form"> Enter username: </label>
-                <input type="text" id="username" name="username" class="input_form_field" placeholder="Username">
+                <input type="text" id="username" name="username" class="input_form_field" placeholder="Username" required autocomplete="username">
                 <br>
                 <label for="password" class="label_form"> Enter password: </label>
-                <input type="password" id="password" name="password" class="input_form_field" placeholder="Password">
+                <input type="password" id="password" name="password" class="input_form_field" placeholder="Password" required autocomplete="current-password">
 
                 <div class="h-captcha capcha_placement" data-sitekey="0ff041fe-1418-4c74-8bca-10882266eb3a" data-callback="onCapchaSuccess"></div>
                 <script src="https://js.hcaptcha.com/1/api.js" async defer></script>

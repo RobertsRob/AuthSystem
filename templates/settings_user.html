@@ -38,16 +38,16 @@
                 {% if username %}
                 <form action="/update_email" method="post">
                     <label class="setting_text" for="change_email">Email:</label>
-                    <input class="input_form_field" type="email" placeholder="email" value="{{ email }}" id="change_email" name="new_email" required> <br>
+                    <input class="input_form_field" type="email" placeholder="email" value="{{ email }}" id="change_email" name="new_email" autocomplete="email" required> <br>
                     <label class="setting_text" for="password_to_confirm">Password:</label>
-                    <input class="input_form_field" type="password" name="password" placeholder="Password" id="password_to_confirm" required>
+                    <input class="input_form_field" type="password" name="password" placeholder="Password" id="password_to_confirm" autocomplete="current-password" required>
                     <input class="save_setting_button" type="submit" value="save"> <br> <br>
                 </form>
                 <form action="/update_password" method="post">
                     <label class="setting_text" for="change_password_old">Old password:</label>
-                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_old" name="password" required> <br>
+                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_old" name="password" autocomplete="current-password" required> <br>
                     <label class="setting_text" for="change_password_new">New password:</label>
-                    <input class="input_form_field" type="password" placeholder="new password" id="change_password_new" name="new_password" required>
+                    <input class="input_form_field" type="password" placeholder="new password" id="change_password_new" name="new_password" autocomplete="new-password" required>
                     <input class="save_setting_button" type="submit" value="save">
                 </form>
                 {% endif %}
