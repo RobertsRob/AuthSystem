@@ -30,7 +30,7 @@
         </div>
         <div class="middle_block_h">
             <div class="display_block">
-                <p class="main_text">This is a {% if username %} {{ username }} {% else %} Google Auth {% endif %} page!</p> <br>
+                <p class="main_text">{% if username %} {{ username }} {% else %} {{email}} {% endif %}'s page!</p> <br>
                 <p class="descript_text">User id: {{ user_id }}</p> <br>
                 <p class="descript_text">Email: {{ email }}</p> <br>
                 <p class="descript_text">Created at: {{ created_at }}</p> <br>

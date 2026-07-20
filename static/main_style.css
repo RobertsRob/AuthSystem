@@ -281,3 +281,37 @@ a{
 .menu_text_left_side{
     font-size: 3.5vh;
 }
+.display_block_settings{
+    width: 100%;
+    display: block;
+    padding: 0 0 0 8vw;
+    text-align: left;
+}
+.no_margin_bottom{
+    margin-bottom: 0;
+}
+.margin_bottom{
+    margin-bottom: 1.5vh;
+}
+.small_text{
+    position: relative;
+    top: 0.5vh;
+    font-size: 1.5vh;
+    color: grey;
+}
+.setting_text{
+    font-size: 2.5vh;
+    color: #1e3e0e;
+}
+.save_setting_button{
+    height: 2.6vh;
+    background-color: #b3fdb6;
+    border-radius: 2vh;
+    border: 1px solid #1e3e0e;
+    width: 6.5vw;
+    position: relative;
+    top: -0.16vh;
+    padding-left: 0.5vw;
+    margin-bottom: 0.5vh;
+    font-size: 2vh;
+}

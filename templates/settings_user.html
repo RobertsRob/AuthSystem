@@ -28,10 +28,25 @@
             <div class="left_side_link_d"><a class="left_side_link" href="/settings">Settings</a></div> <div class="line_hor"></div>
         </div>
         <div class="middle_block_h">
-            <div class="display_block">
-                <p class="main_text">This is a {% if username %} {{ username }} {% else %} Google Auth {% endif %} settings page!</p> <br>
-                <p class="descript_text">User id: {{ user_id }}</p> <br>
-                <p class="descript_text">Email: {{ email }}</p> <br>
+            <div class="display_block_settings">
+                <p class="main_text no_margin_bottom">{% if username %} {{ username }} {% else %} {{email}} {% endif %}'s settings page</p>
+                <span class="small_text margin_bottom">user id: {{ user_id }}</span> <br> <br>
+                
+                {% if username %}
+                <form action="/update_email" method="post">
+                    <label class="setting_text" for="change_email">Email:</label>
+                    <input class="input_form_field" type="email" placeholder="email" value="{{ email }}" id="change_email">
+                    <input class="save_setting_button" type="submit" value="save"> <br> <br>
+                </form>
+                <form action="/update_password" method="post">
+                    <label class="setting_text" for="change_password_old">Old password:</label>
+                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_old"> <br>
+                    <label class="setting_text" for="change_password_new">New password:</label>
+                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_new">
+                    <input class="save_setting_button" type="submit" value="save">
+                </form>
+                {% endif %}
+
                 <p class="descript_text">Created at: {{ created_at }}</p> <br>
             </div>
             
