@@ -124,8 +124,8 @@ def login_submit():
     if not verify_token(captcha_token):
         return redirect(url_for('login', error="CAPTCHA failed"))
     
-    username = request.form.get("username")
-    password = request.form.get("password")
+    username = request.form.get("username", "").strip().lower()
+    password = request.form.get("password", "").strip().lower()
 
     if not username or not password:
         return redirect(url_for('login', error="Missing fields"))
@@ -162,9 +162,9 @@ def signup_submit():
     if not verify_token(captcha_token):
         return redirect(url_for('signup', error="CAPTCHA failed"))
     
-    username = request.form.get("username")
+    username = request.form.get("username", "").strip().lower()
     email = request.form.get("email", "").strip().lower()
-    password = request.form.get("password")
+    password = request.form.get("password", "").strip().lower()
     hashed_password = generate_password_hash(password)
 
     if len(username) <= 5:
@@ -173,6 +173,8 @@ def signup_submit():
         return redirect(url_for('signup', error="Email is not valid"))
     if len(password) < 8:
         return redirect(url_for('signup', error="Password id too short"))
+    if not re.match(r'^[A-Za-z0-9_*]+$', password):
+        return redirect(url_for('signup', error="Cannot update password - new password is not valid (password can only contain letters, numbers, '_', and '*')"))
 
     try:
         conn, cur = connect_to_database()
@@ -302,7 +304,7 @@ def update_email():
     if google_id:
         return redirect(url_for("settings", error="Cannot update email for this user (used OAuth 2.0)"))
 
-    password = request.form.get("password")
+    password = request.form.get("password", "").strip().lower()
     new_email = request.form.get("new_email", "").strip().lower()
 
     if not new_email or not password:
@@ -328,3 +330,47 @@ def update_email():
         close_database(conn, cur)
     
     return redirect(url_for('settings', success="Email updated"))
+
+
+@app.route("/update_password", methods=["POST"])
+def update_password():
+    data = get_data_from_token()
+    if not data:
+        return redirect(url_for("login"))
+    
+    user = get_user_from_user_id(data["user_id"])
+    username, email, created_at, google_id = user[1], user[2], user[5], user[4]
+
+    if google_id:
+        return redirect(url_for("settings", error="Cannot update password for this user (used OAuth 2.0)"))
+    
+    password = request.form.get("password", "").strip().lower()
+    new_password = request.form.get("new_password", "").strip().lower()
+    hashed_password = generate_password_hash(new_password)
+
+    if not new_password or not password:
+        return redirect(url_for('settings', error="Cannot update password - missing fields"))
+    
+    if not check_password_hash(user[3], password):
+        return redirect(url_for('settings', error="Cannot update password - password is not valid"))
+    
+    if password == new_password:
+        return redirect(url_for('settings', error="Cannot update password - this is already your password, nothing to update"))
+    
+    if len(new_password) < 8:
+        return redirect(url_for('settings', error="Cannot update password - new password is not valid (too short)"))
+    if not re.match(r'^[A-Za-z0-9_*]+$', new_password):
+        return redirect(url_for('settings', error="Cannot update password - new password is not valid (password can only contain letters, numbers, '_', and '*')"))
+    
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("UPDATE users SET password = (%s) WHERE id = (%s)", (hashed_password, user[0])) 
+        conn.commit()
+    finally:
+        close_database(conn, cur)
+    
+    return redirect(url_for('settings', success="Password updated"))
+
+
+
+
