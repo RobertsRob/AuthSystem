@@ -315,3 +315,13 @@ a{
     margin-bottom: 0.5vh;
     font-size: 2vh;
 }
+.text_error{
+    font-size: 2vh;
+    color: red;
+    margin-top: 0;
+}
+.text_success{
+    font-size: 2vh;
+    color: rgb(0, 99, 38);
+    margin-top: 0;
+}

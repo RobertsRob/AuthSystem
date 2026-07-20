@@ -163,13 +163,13 @@ def signup_submit():
         return redirect(url_for('signup', error="CAPTCHA failed"))
     
     username = request.form.get("username")
-    email = request.form.get("email")
+    email = request.form.get("email", "").strip().lower()
     password = request.form.get("password")
     hashed_password = generate_password_hash(password)
 
     if len(username) <= 5:
         return redirect(url_for('signup', error="Username is too short"))
-    if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$', email):
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
         return redirect(url_for('signup', error="Email is not valid"))
     if len(password) < 8:
         return redirect(url_for('signup', error="Password id too short"))
@@ -235,6 +235,15 @@ def google_callback():
 
 # {os.getenv('JWTSECRET')}
 
+def get_data_from_token():
+    jwtoken = request.cookies.get("access_token")
+    try:
+        data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return False
+    return data
+        
+
 def get_user_from_user_id(user_id):
     user = None
     try:
@@ -249,17 +258,13 @@ def get_user_from_user_id(user_id):
 @app.route("/home_user")
 def home_user():
 
-    jwtoken = request.cookies.get("access_token")
-    
-    try:
-        data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
-    except jwt.InvalidTokenError:
+    data = get_data_from_token()
+    if not data:
         return redirect(url_for("login"))
-    
+
     user = get_user_from_user_id(data["user_id"])
 
     username, email, created_at = user[1], user[2], user[5]
-    encrypted_psw = user[3]
     google_id = user[4]
 
     return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at})
@@ -274,15 +279,52 @@ def logout():
 
 @app.route("/settings")
 def settings():
+    error, success = request.args.get("error"), request.args.get("success")
 
-    jwtoken = request.cookies.get("access_token")
-    
-    try:
-        data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
-    except jwt.InvalidTokenError:
+    data = get_data_from_token()
+    if not data:
         return redirect(url_for("login"))
     
     user = get_user_from_user_id(data["user_id"])
     username, email, created_at = user[1], user[2], user[5]
 
-    return safe_render_template("settings_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at})
+    return safe_render_template("settings_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at, "error" : error, "success" : success})
+
+@app.route("/update_email", methods=["POST"])
+def update_email():
+    data = get_data_from_token()
+    if not data:
+        return redirect(url_for("login"))
+    
+    user = get_user_from_user_id(data["user_id"])
+    username, email, created_at, google_id = user[1], user[2], user[5], user[4]
+
+    if google_id:
+        return redirect(url_for("settings", error="Cannot update email for this user (used OAuth 2.0)"))
+
+    password = request.form.get("password")
+    new_email = request.form.get("new_email", "").strip().lower()
+
+    if not new_email or not password:
+        return redirect(url_for('settings', error="Cannot update email - missing fields"))
+    
+    if email == new_email:
+        return redirect(url_for('settings', error="Cannot update email - this is already your email, nothing to update"))
+    
+    if not check_password_hash(user[3], password):
+        return redirect(url_for('settings', error="Cannot update email - password is not valid"))
+    
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', new_email):
+        return redirect(url_for('settings', error="Cannot update email - email is not valid"))  
+    
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("UPDATE users SET email = (%s) WHERE id = (%s)", (new_email, user[0])) 
+        conn.commit()
+    except psycopg.errors.UniqueViolation:
+        conn.rollback()
+        return redirect(url_for('settings', error="Cannot update email - this email is already in use"))
+    finally:
+        close_database(conn, cur)
+    
+    return redirect(url_for('settings', success="Email updated"))

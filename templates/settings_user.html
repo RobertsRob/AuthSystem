@@ -31,18 +31,23 @@
             <div class="display_block_settings">
                 <p class="main_text no_margin_bottom">{% if username %} {{ username }} {% else %} {{email}} {% endif %}'s settings page</p>
                 <span class="small_text margin_bottom">user id: {{ user_id }}</span> <br> <br>
+
+                {% if error %}<p class="text_error">{{ error }}</p> {% endif %}
+                {% if success %}<p class="text_success">{{ success }}</p> {% endif %}
                 
                 {% if username %}
                 <form action="/update_email" method="post">
                     <label class="setting_text" for="change_email">Email:</label>
-                    <input class="input_form_field" type="email" placeholder="email" value="{{ email }}" id="change_email">
+                    <input class="input_form_field" type="email" placeholder="email" value="{{ email }}" id="change_email" name="new_email" required> <br>
+                    <label class="setting_text" for="password_to_confirm">Password:</label>
+                    <input class="input_form_field" type="password" name="password" placeholder="Password" id="password_to_confirm" required>
                     <input class="save_setting_button" type="submit" value="save"> <br> <br>
                 </form>
                 <form action="/update_password" method="post">
                     <label class="setting_text" for="change_password_old">Old password:</label>
-                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_old"> <br>
+                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_old" required> <br>
                     <label class="setting_text" for="change_password_new">New password:</label>
-                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_new">
+                    <input class="input_form_field" type="password" placeholder="old password" id="change_password_new" required>
                     <input class="save_setting_button" type="submit" value="save">
                 </form>
                 {% endif %}
