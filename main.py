@@ -125,7 +125,7 @@ def login_submit():
         return redirect(url_for('login', error="CAPTCHA failed"))
     
     username = request.form.get("username", "").strip().lower()
-    password = request.form.get("password", "").strip().lower()
+    password = request.form.get("password", "")
 
     if not username or not password:
         return redirect(url_for('login', error="Missing fields"))
@@ -164,7 +164,7 @@ def signup_submit():
     
     username = request.form.get("username", "").strip().lower()
     email = request.form.get("email", "").strip().lower()
-    password = request.form.get("password", "").strip().lower()
+    password = request.form.get("password", "")
     hashed_password = generate_password_hash(password)
 
     if len(username) <= 5:
@@ -304,7 +304,7 @@ def update_email():
     if google_id:
         return redirect(url_for("settings", error="Cannot update email for this user (used OAuth 2.0)"))
 
-    password = request.form.get("password", "").strip().lower()
+    password = request.form.get("password", "")
     new_email = request.form.get("new_email", "").strip().lower()
 
     if not new_email or not password:
@@ -344,8 +344,8 @@ def update_password():
     if google_id:
         return redirect(url_for("settings", error="Cannot update password for this user (used OAuth 2.0)"))
     
-    password = request.form.get("password", "").strip().lower()
-    new_password = request.form.get("new_password", "").strip().lower()
+    password = request.form.get("password", "")
+    new_password = request.form.get("new_password", "")
     hashed_password = generate_password_hash(new_password)
 
     if not new_password or not password:
