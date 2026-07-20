@@ -260,7 +260,7 @@ def home_user():
     encrypted_psw = user[3]
     google_id = user[4]
 
-    return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "google_id" : google_id, "created_at" : created_at})
+    return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at})
 
 
 @app.route("/logout")
