@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
-    <title>User page</title>
+    <title>Settings</title>
 </head>
 <body>
     <div class="header">
         <div class="link_part">
-            <!-- <div class="tw_pr"><a href="" class="link_head">← Back</a></div> -->
+            <div class="tw_pr"><a href="/home_user" class="link_head">← Back</a></div>
         </div>
         <div class="auth_buttons">
             {% if username %}
@@ -23,10 +23,10 @@
     <div class="content">
         <div class="middle_block">
             <div class="display_block">
-                <p class="main_text">This is a {{ username }} page!</p> <br>
+                <p class="main_text">This is a {{ username }} settings page!</p> <br>
                 <p class="descript_text">User id: {{ user_id }}</p> <br>
                 <p class="descript_text">Email: {{ email }}</p> <br>
-                <p class="descript_text">Google id: {{ google_id }}</p> <br>
+                <!-- <p class="descript_text">Google id: {{ google_id }}</p> <br> -->
                 <p class="descript_text">Created at: {{ created_at }}</p> <br>
             </div>
             

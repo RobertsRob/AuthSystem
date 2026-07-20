@@ -233,6 +233,17 @@ def google_callback():
 
 # {os.getenv('JWTSECRET')}
 
+def get_user_from_user_id(user_id):
+    user = None
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE id = (%s)", (user_id,)) 
+        user = cur.fetchone()
+    finally:
+        close_database(conn, cur)
+    
+    return user
+
 @app.route("/home_user")
 def home_user():
 
@@ -243,18 +254,11 @@ def home_user():
     except jwt.InvalidTokenError:
         return redirect(url_for("login"))
     
-    try:
-        conn, cur = connect_to_database()
-        cur.execute("SELECT * FROM users WHERE id = (%s)", (data["user_id"],)) 
-        user = cur.fetchone()
-    finally:
-        close_database(conn, cur)
+    user = get_user_from_user_id(data["user_id"])
 
-    username = user[1]
-    email = user[2]
+    username, email, created_at = user[1], user[2], user[5]
     encrypted_psw = user[3]
     google_id = user[4]
-    created_at = user[5]
 
     return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "google_id" : google_id, "created_at" : created_at})
 
@@ -265,3 +269,18 @@ def logout():
     response = redirect(url_for("home"))
     response.delete_cookie("access_token")
     return response
+
+@app.route("/settings")
+def settings():
+
+    jwtoken = request.cookies.get("access_token")
+    
+    try:
+        data = jwt.decode(jwtoken, os.getenv('JWTSECRET'), algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return redirect(url_for("login"))
+    
+    user = get_user_from_user_id(data["user_id"])
+    username, email, created_at = user[1], user[2], user[5]
+
+    return safe_render_template("settings_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at})
