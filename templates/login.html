@@ -13,6 +13,8 @@
 <body>
     <div class="full_screen">
         <div class="form_middle">
+            <a class="arrow_back_auth" href="/">← back</a>
+
             <p class="main_text center_text">Log in</p>
             {% if error %}
                 <p class="text_upper">{{ error }}</p>
@@ -29,7 +31,8 @@
                 <input type="text" id="username" name="username" class="input_form_field" placeholder="Username" required autocomplete="username">
                 <br>
                 <label for="password" class="label_form"> Enter password: </label>
-                <input type="password" id="password" name="password" class="input_form_field" placeholder="Password" required autocomplete="current-password">
+                <input type="password" id="password" name="password" class="input_form_field" placeholder="Password" required autocomplete="current-password"><br>
+                <span>Dont remember your password <a href="/forgot_password">Forgot password</a></span>
 
                 <div class="h-captcha capcha_placement" data-sitekey="0ff041fe-1418-4c74-8bca-10882266eb3a" data-callback="onCapchaSuccess"></div>
                 <script src="https://js.hcaptcha.com/1/api.js" async defer></script>

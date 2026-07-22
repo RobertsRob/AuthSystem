@@ -9,6 +9,10 @@ from datetime import datetime, timedelta, UTC
 from werkzeug.security import generate_password_hash, check_password_hash
 from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_mail import Mail, Message
+import secrets
+import hashlib
+
 
 load_dotenv()
 app = Flask(__name__)
@@ -27,6 +31,19 @@ try:
     )
 except Exception as e:
     print(f"Failed to connect to google auth: {e}")
+
+try:
+    app.config.update(
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_PORT=587,
+        MAIL_USE_TLS=True,
+        MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+        MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+        MAIL_DEFAULT_SENDER=os.getenv("MAIL_DEFAULT_SENDER"),
+    )
+    mail = Mail(app)
+except Exception as e:
+    print(f"Failed to connect to flask mail: {e}")
 
 def safe_render_template(template_file, jinja_info=None):
     try:
@@ -57,8 +74,19 @@ def connect_to_database():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cur.execute("""CREATE TABLE IF NOT EXISTS password_resets (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT UNIQUE NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        
     finally:
-        conn.commit()
+        if conn:
+            conn.commit()
     return (conn, cur)
 
 def close_database(conn, cur):
@@ -176,6 +204,7 @@ def signup_submit():
     if not re.match(r'^[A-Za-z0-9_*]+$', password):
         return redirect(url_for('signup', error="Cannot update password - new password is not valid (password can only contain letters, numbers, '_', and '*')"))
 
+    conn, cur = None, None
     try:
         conn, cur = connect_to_database()
         cur.execute("SELECT * FROM users WHERE username = (%s)", (username,)) 
@@ -185,9 +214,10 @@ def signup_submit():
 
         cur.execute("INSERT INTO users (username, email, password, google_id) VALUES (%s, %s, %s, %s) RETURNING id", (username, email, hashed_password, None))
         user_id = cur.fetchone()[0]
-    finally:
+        print(conn)
         if conn:
             conn.commit()
+    finally:
         close_database(conn, cur)
 
     response = make_response(redirect(url_for("home_user")))
@@ -234,8 +264,6 @@ def google_callback():
     
     return response
 
-
-# {os.getenv('JWTSECRET')}
 
 def get_data_from_token():
     jwtoken = request.cookies.get("access_token")
@@ -372,5 +400,134 @@ def update_password():
     return redirect(url_for('settings', success="Password updated"))
 
 
+@app.route("/forgot_password")
+def forgot_password():
+    return safe_render_template("forgot_password.html")
+
+def send_reset_email(to_email, reset_link):
+    msg = Message("Reset your password", recipients=[to_email])
+    msg.body = f"Click to reset your password (expires in 5 minutes): {reset_link}"
+    msg.html = f'<p>Click below to reset your password. This link expires in 5 minutes.</p><a href="{reset_link}">Reset Password</a>'
+    mail.send(msg)
+
+@app.route("/send_password_reset_email", methods=["POST"])
+def send_password_reset_email():
+    captcha_token = request.form.get("h-captcha-response")
+    
+    if not captcha_token:
+        return redirect(url_for('forgot_password', error="Please complete CAPTCHA"))
+    
+    if not verify_token(captcha_token):
+        return redirect(url_for('forgot_password', error="CAPTCHA failed"))
+
+    email = request.form.get("email")
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    main_domain = os.getenv("MAIN_DOMAIN")
+    reset_link = f"https://{main_domain}/reset_password_link?token={raw_token}"
+    expires_at = datetime.now(UTC) + timedelta(minutes=5)
+
+    if not email:
+        return redirect(url_for('forgot_password', error="Cannot send password reset link - Email field is empty"))
+    
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return redirect(url_for('forgot_password', error="Cannot send password reset link to unvalid email"))
+
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE email = (%s)", (email, )) 
+        user = cur.fetchone()
+    finally:
+        close_database(conn, cur)
+
+    if not user:
+        return redirect(url_for('forgot_password', error="Cannot send password reset link to nonexistent email"))
+
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("UPDATE password_resets SET used = TRUE WHERE user_id = %s AND used = FALSE", (user[0],))
+        cur.execute("INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (%s, %s, %s)", (user[0], token_hash, expires_at)) 
+        conn.commit()
+    finally:
+        close_database(conn, cur)
+    send_reset_email(email, reset_link)
+
+    return redirect(url_for("email_was_sent"))
+
+
+
+@app.route("/email_was_sent")
+def email_was_sent():
+    return safe_render_template("email_was_sent.html")
+
+
+def is_token_valid(cur, raw_token):
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    cur.execute("SELECT user_id FROM password_resets WHERE token_hash = (%s) AND expires_at > NOW() AND used = FALSE", (token_hash, ))
+    row = cur.fetchone()
+    return row, token_hash
+
+
+@app.route("/reset_password_link", methods=["GET", "POST"])
+def reset_password_link():
+    if request.method == "GET":
+        raw_token = request.args.get("token")
+    else:
+        raw_token = request.form.get("token")
+
+    print(f"[DEBUG] sdfdf {raw_token},", flush=True)
+
+    if not raw_token:
+        return redirect(url_for('forgot_password', error="Reset link is invalid please try again"))
+
+    try:
+        conn, cur = connect_to_database()
+        row, token_hash = is_token_valid(cur, raw_token)
+
+        print(f"[DEBUG] completed {token_hash}, {row}, {not row}", flush=True)
+
+        if not row:
+            return redirect(url_for('forgot_password', error="Reset link is invalid please try again"))
+
+        if request.method == "GET":
+            return safe_render_template("reset_password.html", {"token" : raw_token})
+
+
+        captcha_token = request.form.get("h-captcha-response")
+        new_password = request.form.get("password")
+        hashed_password = generate_password_hash(new_password)
+
+        if not captcha_token:
+            return redirect(url_for('reset_password_link', token=raw_token, error="Please complete CAPTCHA"))
+
+        if not verify_token(captcha_token):
+            return redirect(url_for('reset_password_link', token=raw_token, error="CAPTCHA failed"))
+
+        if not new_password:
+            return redirect(url_for('reset_password_link', token=raw_token, error="Cannot reset password - that field cannot be empty"))
+        if len(new_password) < 8:
+            return redirect(url_for('reset_password_link', token=raw_token, error="Cannot reset password - new password is not valid (too short)"))
+        if not re.match(r'^[A-Za-z0-9_*]+$', new_password):
+            return redirect(url_for('reset_password_link', token=raw_token, error="Cannot reset password - new password is not valid (password can only contain letters, numbers, '_', and '*')"))
+
+        try:
+            cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, row[0]))
+            cur.execute("UPDATE password_resets SET used = TRUE WHERE token_hash = %s", (token_hash,))
+            conn.commit()
+        except Exception as e:
+            print("Error while changing psw:", e)
+            return redirect(url_for('reset_password_link', token=raw_token, error="Something went wrong - not your fault( Try again!"))
+    finally:
+        close_database(conn, cur)
+    print("[DEBUG] completed")
+    return redirect(url_for("password_was_reset"))
+
+        
+
+@app.route("/password_was_reset")
+def password_was_reset():
+    return safe_render_template("password_was_reset.html")
+        
+    
 
 

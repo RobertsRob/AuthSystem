@@ -150,10 +150,15 @@ a{
     color: #1e3e0e;
 }
 .form_middle{
-    /* background-color: #fff; */
     margin: 0 auto;
     padding-top: 20vh;
     width: 28%;
+    text-align: left;
+}
+.form_middle_wide{
+    margin: 0 auto;
+    padding-top: 20vh;
+    width: 35%;
     text-align: left;
 }
 .center_text{
@@ -324,4 +329,13 @@ a{
     font-size: 2vh;
     color: rgb(0, 99, 38);
     margin-top: 0;
+}
+.arrow_back_auth{
+    position: fixed;
+    text-align: left;
+    font-size: 2.4vh;
+    color: black;
+}
+.text_center{
+    text-align: center;
 }

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
+    <title>Email was sent</title>
+    <script>
+        function onCapchaSuccess(){document.getElementById("submit_button").disabled = false;}
+    </script>
+</head>
+<body>
+    <div class="full_screen">
+        <div class="form_middle">
+        
+            <p class="main_text center_text">Email was sent</p>
+            <p class="descript_text text_center">Check your email, there was sent a link to reset your password!</p>
+            <a href="https://mail.google.com/mail/"><button class="submit_button">Check gmail</button></a>
+        </div>
+    </div>
+</body>
+</html>
