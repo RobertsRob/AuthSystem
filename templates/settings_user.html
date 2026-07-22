@@ -6,6 +6,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
     <title>Settings</title>
+    <script>
+        function showPassword(){document.getElementById("change_password_old").type = "text";document.getElementById("change_password_new").type = "text";}
+    </script>
 </head>
 <body>
     <div class="header">
@@ -47,8 +50,9 @@
                     <label class="setting_text" for="change_password_old">Old password:</label>
                     <input class="input_form_field" type="password" placeholder="old password" id="change_password_old" name="password" autocomplete="current-password" required> <br>
                     <label class="setting_text" for="change_password_new">New password:</label>
-                    <input class="input_form_field" type="password" placeholder="new password" id="change_password_new" name="new_password" autocomplete="new-password" required>
-                    <input class="save_setting_button" type="submit" value="save">
+                    <input class="input_form_field" type="password" placeholder="new password" id="change_password_new" name="new_password" autocomplete="new-password" required><input class="save_setting_button" type="submit" value="save"> <br>
+                    <input type="checkbox" id="reveal_password" onclick="showPassword()"> <label for="reveal_password">Show password</label> <br> <br>
+                    
                 </form>
                 {% endif %}
 

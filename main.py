@@ -402,7 +402,8 @@ def update_password():
 
 @app.route("/forgot_password")
 def forgot_password():
-    return safe_render_template("forgot_password.html")
+    error = request.args.get("error")
+    return safe_render_template("forgot_password.html", {"error" : error})
 
 def send_reset_email(to_email, reset_link):
     msg = Message("Reset your password", recipients=[to_email])
@@ -471,7 +472,9 @@ def is_token_valid(cur, raw_token):
 @app.route("/reset_password_link", methods=["GET", "POST"])
 def reset_password_link():
     if request.method == "GET":
+        error = request.args.get("error")
         raw_token = request.args.get("token")
+        
     else:
         raw_token = request.form.get("token")
 
@@ -490,7 +493,7 @@ def reset_password_link():
             return redirect(url_for('forgot_password', error="Reset link is invalid please try again"))
 
         if request.method == "GET":
-            return safe_render_template("reset_password.html", {"token" : raw_token})
+            return safe_render_template("reset_password.html", {"token" : raw_token, "error" : error})
 
 
         captcha_token = request.form.get("h-captcha-response")

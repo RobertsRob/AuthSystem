@@ -8,6 +8,7 @@
     <title>Login page</title>
     <script>
         function onCapchaSuccess(){document.getElementById("submit_button").disabled = false;}
+        function showPassword(){document.getElementById("password").type = "text";}
     </script>
 </head>
 <body>
@@ -32,6 +33,7 @@
                 <br>
                 <label for="password" class="label_form"> Enter password: </label>
                 <input type="password" id="password" name="password" class="input_form_field" placeholder="Password" required autocomplete="current-password"><br>
+                <input type="checkbox" id="reveal_password" onclick="showPassword()"> <label for="reveal_password">Show password</label> <br> <br>
                 <span>Dont remember your password <a href="/forgot_password">Forgot password</a></span>
 
                 <div class="h-captcha capcha_placement" data-sitekey="0ff041fe-1418-4c74-8bca-10882266eb3a" data-callback="onCapchaSuccess"></div>
