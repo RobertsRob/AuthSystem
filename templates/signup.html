@@ -7,8 +7,97 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
     <title>Sign up page</title>
     <script>
-        function onCapchaSuccess(){document.getElementById("submit_button").disabled = false;}
+        function onCapchaSuccess(){ captchaSucceeded = true; if(available) document.getElementById("submit_button").disabled = false;}
         function showPassword(){document.getElementById("password").type = "text";document.getElementById("password_repeat").type = "text";}
+        
+        async function canCreateUser(username) {
+            const response = await fetch(`/api/users/check?username=${username}`);
+            const data = await response.json();
+
+            if (data.status === "OK") {
+                if (data.exists) {
+                    return false;
+                } else {
+                    return true;
+                }
+            } else {
+                return false;
+                console.error(data.info);
+            }
+        }
+
+        let timeLastChange = Date.now();
+        let checked = false;
+        let isChecking = false;
+        let lastUsername = "";
+        var available, captchaSucceeded = false;
+        const HOW_OFTEN_CHECK = 1500;
+
+        setInterval(async () => {
+            const message = document.getElementById("usernameAvailability");
+            const username = document.getElementById("username").value;
+            const ERROR = "error_availability_text",
+                SUCCESS = "success_availability_text",
+                CHECKING = "checking_availability_text";
+
+            if(lastUsername != username){
+                lastUsername = username;
+                timeLastChange = Date.now();
+                checked = false;
+            }
+
+            if (!username) {
+                message.style.display = "none";
+                document.getElementById("br_enter").hidden = true;
+                document.getElementById("submit_button").disabled = true;
+                document.getElementById("loading_gif").hidden = true;
+                return;
+            }
+            message.style.display = "";
+            document.getElementById("br_enter").hidden = false;
+
+            if (username.length < 8) {
+                message.className = ERROR;
+                message.textContent = "Username is too short";
+                document.getElementById("loading_gif").hidden = true;
+                document.getElementById("submit_button").disabled = true;
+                return;
+            }
+
+            if (checked) {
+                return;
+            }
+
+            const elapsed = Date.now() - timeLastChange;
+
+            if (elapsed < HOW_OFTEN_CHECK) {
+                message.className = CHECKING;
+                message.textContent = "Checking username availability";
+                document.getElementById("loading_gif").hidden = false;
+                document.getElementById("submit_button").disabled = true;
+                return;
+            }
+            
+
+            if (!isChecking) {
+                isChecking = true;
+                available = await canCreateUser(username);
+                checked = true;
+                isChecking = false;
+
+                if (available) {
+                    message.className = SUCCESS;
+                    message.textContent = "Username is available";
+                    document.getElementById("loading_gif").hidden = true;
+                    if(captchaSucceeded) document.getElementById("submit_button").disabled = false;
+                } else {
+                    message.className = ERROR;
+                    message.textContent = "Username is taken";
+                    document.getElementById("loading_gif").hidden = true;
+                    document.getElementById("submit_button").disabled = true;
+                }
+            }
+        }, 50);
     </script>
 </head>
 <body>
@@ -29,7 +118,9 @@
             
             <form action="/signup_submit" method="POST">
                 <label for="username" class="label_form"> Enter username: </label>
-                <input type="text" id="username" name="username" class="input_form_field" placeholder="Username" autocomplete="off" required>
+                <input type="text" id="username" name="username" class="input_form_field" placeholder="Username" autocomplete="off" required><br id="br_enter">
+                <img src="{{ url_for('static', filename='img/loading.gif') }}" alt="loading gif" class="loading_gif_check" id="loading_gif">
+                <span id="usernameAvailability" class="checking_availability_text"></span>
                 <br>
                 <label for="email" class="label_form"> Enter email: </label>
                 <input type="email" id="email" name="email" class="input_form_field" placeholder="Email" autocomplete="email" required>

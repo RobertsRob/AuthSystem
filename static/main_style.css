@@ -339,3 +339,21 @@ a{
 .text_center{
     text-align: center;
 }
+.error_availability_text{
+    font-size: 1.8vh;
+    color: rgb(132, 5, 5);
+}
+.success_availability_text{
+    font-size: 1.8vh;
+    color: #276c04;
+}
+.checking_availability_text{
+    font-size: 1.8vh;
+    color: #777382;
+}
+.loading_gif_check{
+    position: relative;
+    top: 0.2vh;
+    width: 1.5vh;
+    height: 1.5vh;
+}

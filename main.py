@@ -142,6 +142,21 @@ def signup():
     error = request.args.get("error")
     return safe_render_template("signup.html", {"error" : error})
 
+@app.route("/api/users/check")
+def api_users_check():
+    username = request.args.get("username")
+    if not username:
+        return {"status" : "Error", "info" : "Username cannot be empty!"}
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE username = %s)", (username,))
+        exists = cur.fetchone()[0]
+    finally:
+        close_database(conn, cur)
+    return {"status" : "OK", "exists" : exists}
+
+
+
 @app.route("/login_submit", methods=["POST"])
 def login_submit():
     captcha_token = request.form.get("h-captcha-response")
