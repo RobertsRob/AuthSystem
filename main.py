@@ -547,5 +547,18 @@ def password_was_reset():
     return safe_render_template("password_was_reset.html")
         
     
+@app.route("/admin")
+def admin():
+    error = request.args.get("error")
+    return safe_render_template("admin_login.html", {"error" : error})
 
+@app.route("/admin_login_submit", methods=["POST"])
+def admin_login_submit():
+    captcha_token = request.form.get("h-captcha-response")
+    if not captcha_token:
+                return redirect(url_for('admin', error="Please complete CAPTCHA"))
+    
+    if not verify_token(captcha_token):
+        return redirect(url_for('admin', error="CAPTCHA failed"))
 
+    return "Haha you thought i coded this already, lol"
