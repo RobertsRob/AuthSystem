@@ -616,7 +616,31 @@ def delete_user(id):
         
     return "", 403
 
+@app.route("/update_role/<int:id>", methods=["PATCH"])
+def update_role(id):
+    user = get_admin_user()
 
+    if not user:
+        return "", 403
+    try:
+        conn, cur = connect_to_database()
+
+        cur.execute("SELECT role FROM users WHERE id = %s;", (id,))
+        result = cur.fetchone()
+        if result is None:
+            return "User not found", 404
+
+        current_role = result[0]
+        new_role = "user" if current_role == "admin" else "admin"
+
+        cur.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, id))
+        conn.commit()
+
+        return "", 204
+    finally:
+        close_database(conn, cur)
+
+    
 
 
 

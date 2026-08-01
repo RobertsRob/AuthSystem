@@ -8,11 +8,21 @@
     <title>View Users</title>
     <script>
         function delete_user(id){
-            console.log("Deleting user:", id);
-
             if (confirm("Are you sure you want to delete this user?")) {
                 fetch("/delete_user/" + id, {
                     method: "DELETE"
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    }
+                });
+            }
+        }
+        function update_user_role(id){
+            if (confirm("Are you sure you want to change this users role?")) {
+                fetch("/update_role/" + id, {
+                    method: "PATCH"
                 })
                 .then(response => {
                     if (response.ok) {
@@ -27,34 +37,32 @@
     <div class="full_screen">
         <p class="right_text"><a href="/admin">Dashboard</a> | <a href="/logout">Logout</a></p>
         <div class="form_middle">
-        
             <p class="main_text center_text">View Users</p>
-            
-            
-            <table class="users_table">
-                <tr class="row_table">
-                    <th class="header_table">ID</th>
-                    <th class="header_table">Username</th>
-                    <th class="header_table">Email</th>
-                    <th class="header_table">Role</th>
-                    <th class="header_table">Created</th>
-                    <th class="header_table">Delete</th>
-                </tr>
-
-                {% for user in users %}
-                <tr class="row_table">
-                    <td class="data_table">{{ user[0] }}</td>
-                    <td class="data_table">{{ user[1] }}</td>
-                    <td class="data_table">{{ user[2] }}</td>
-                    <td class="data_table">{{ user[4] }}</td>
-                    <td class="data_table">{{ user[5] }}</td>
-                    <td class="data_table"><a class="delete_link" onclick="delete_user({{ user[0] }}); return false;">Delete</a></td>
-                </tr>
-                {% endfor %}
-            </table>
-
-            
         </div>
+        <table class="users_table">
+            <tr class="row_table">
+                <th class="header_table">ID</th>
+                <th class="header_table">Username</th>
+                <th class="header_table">Email</th>
+                <th class="header_table">Role</th>
+                <th class="header_table">Created</th>
+                <th class="header_table">Delete</th>
+            </tr>
+
+            {% for user in users %}
+            <tr class="row_table">
+                <td class="data_table">{{ user[0] }}</td>
+                <td class="data_table">{{ user[1] }}</td>
+                <td class="data_table">{{ user[2] }}</td>
+                <td class="data_table">{{ user[4] }}</td>
+                <td class="data_table">{{ user[5] }}</td>
+                <td class="data_table">
+                    <a class="delete_link" onclick="delete_user({{ user[0] }}); return false;">Delete</a> | 
+                    <a class="delete_link" onclick="update_user_role({{ user[0] }}); return false;">Update role</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </div>
 </body>
 </html>

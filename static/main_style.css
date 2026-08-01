@@ -360,6 +360,8 @@ a{
 .users_table {
     border-collapse: collapse;
     border: 1px solid rgb(3, 63, 3);
+    width: 70vw;
+    margin-left: 15vw;
 }
 .row_table {
     border: 1px solid rgb(3, 63, 3);
