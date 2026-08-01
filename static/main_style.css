@@ -384,3 +384,9 @@ a{
     margin-left: 5%;
     height: auto;
 }
+.form_middle_sp{
+    margin: 0 auto;
+    padding-top: 10vh;
+    width: 28%;
+    text-align: left;
+}

@@ -671,8 +671,6 @@ def ratelimit_handler(e):
     return safe_render_template("rate_limited.html", {"retry_after": retry_after}), 429
 
 
-
-
 # Init admin
 if os.getenv("FLASK_ENV") != "testing":
     init_admin()
