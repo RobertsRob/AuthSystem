@@ -24,6 +24,7 @@ jobs:
 
     - name: Test code
       env:
+        FLASK_ENV: testing
         FLASK_SECRET_KEY: "ci-test-secret-key-not-for-production"
       run: pytest
 

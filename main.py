@@ -647,7 +647,6 @@ def update_role(id):
 
 
 
-
-
 # Init admin
-init_admin()
+if os.getenv("FLASK_ENV") != "testing":
+    init_admin()
