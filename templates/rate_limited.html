@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
+    <title>Too many requests</title>
+</head>
+<body>
+    <div class="full_screen">
+        <div class="form_middle">
+            <p class="main_text center_text">HEEEEEEY STOOOOP</p>
+            <p class="descript_text">Too many requests you can try again in {{ retry_after }} seconds <a href="/">Go home...</a></p>
+            <img class="stop_image" src="{{ url_for('static', filename='img/stop.gif') }}" alt="stop gif">
+        </div>
+    </div>
+</body>
+</html>

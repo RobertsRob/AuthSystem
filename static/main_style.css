@@ -379,3 +379,8 @@ a{
 .delete_link:active{
     color: #fa3831;
 }
+.stop_image{
+    width: 90%;
+    margin-left: 5%;
+    height: auto;
+}

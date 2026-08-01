@@ -12,12 +12,23 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_mail import Mail, Message
 import secrets
 import hashlib
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import time
 
 
 load_dotenv()
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+STRICT_RATE_LIMIT = os.getenv("STRICT_RATE_LIMIT", "true").lower() == "true"
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=os.getenv("REDIS_URL", "redis://redis:6379")
+)
 
 oauth = OAuth(app)
 
@@ -163,6 +174,7 @@ def signup():
     return safe_render_template("signup.html", {"error" : error})
 
 @app.route("/api/users/check")
+@limiter.limit("30 per minute")
 def api_users_check():
     username = request.args.get("username")
     if not username:
@@ -176,8 +188,13 @@ def api_users_check():
     return {"status" : "OK", "exists" : exists}
 
 
+def is_failed_redirect(response):
+    if STRICT_RATE_LIMIT:
+        return True  # count every request for rate limiting
+    return response.status_code == 302 and "error=" in response.location
 
 @app.route("/login_submit", methods=["POST"])
+@limiter.limit("5 per minute; 20 per hour", deduct_when=is_failed_redirect)
 def login_submit():
     captcha_token = request.form.get("h-captcha-response")
     
@@ -211,11 +228,11 @@ def login_submit():
         return response
     
     return redirect(url_for('login', error="Username or password was incorect"))
-    
-    
+
 
 
 @app.route("/signup_submit", methods=["POST"])
+@limiter.limit("5 per hour", deduct_when=is_failed_redirect)
 def signup_submit():
     captcha_token = request.form.get("h-captcha-response")
     
@@ -356,6 +373,7 @@ def settings():
     return safe_render_template("settings_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at, "error" : error, "success" : success})
 
 @app.route("/update_email", methods=["POST"])
+@limiter.limit("5 per hour", deduct_when=is_failed_redirect)
 def update_email():
     data = get_data_from_token()
     if not data:
@@ -396,6 +414,7 @@ def update_email():
 
 
 @app.route("/update_password", methods=["POST"])
+@limiter.limit("5 per hour", deduct_when=is_failed_redirect)
 def update_password():
     data = get_data_from_token()
     if not data:
@@ -447,6 +466,7 @@ def send_reset_email(to_email, reset_link):
     mail.send(msg)
 
 @app.route("/send_password_reset_email", methods=["POST"])
+@limiter.limit("3 per hour", deduct_when=is_failed_redirect)
 def send_password_reset_email():
     captcha_token = request.form.get("h-captcha-response")
     
@@ -505,6 +525,7 @@ def is_token_valid(cur, raw_token):
 
 
 @app.route("/reset_password_link", methods=["GET", "POST"])
+@limiter.limit("10 per hour", deduct_when=is_failed_redirect)
 def reset_password_link():
     if request.method == "GET":
         error = request.args.get("error")
@@ -642,7 +663,12 @@ def update_role(id):
         close_database(conn, cur)
 
     
-
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    retry_after = None
+    if limiter.current_limit:
+        retry_after = int(limiter.current_limit.reset_at - time.time())
+    return safe_render_template("rate_limited.html", {"retry_after": retry_after}), 429
 
 
 
