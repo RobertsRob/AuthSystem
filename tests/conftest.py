@@ -1,3 +1,6 @@
+import os
+os.environ["REDIS_URL"] = "memory://"
+
 import pytest
 from main import app
 
