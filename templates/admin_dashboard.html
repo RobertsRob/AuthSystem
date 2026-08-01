@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/plant.png') }}" type="image/x-icon">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <div class="full_screen">
+        <p class="right_text"><a href="/admin">Dashboard</a> | <a href="/logout">Logout</a></p>
+        <div class="form_middle">
+        
+            <p class="main_text center_text">Admin Dashboard</p>
+            <p class="descript_text center_text">You are an admin!</p>
+            
+            <a href="/admin/view_users"><button class="main_button_prices">View Users</button></a>
+
+            
+        </div>
+    </div>
+</body>
+</html>

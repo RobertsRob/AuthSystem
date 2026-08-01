@@ -357,3 +357,23 @@ a{
     width: 1.5vh;
     height: 1.5vh;
 }
+.users_table {
+    border-collapse: collapse;
+    border: 1px solid rgb(3, 63, 3);
+}
+.row_table {
+    border: 1px solid rgb(3, 63, 3);
+}
+.header_table, .data_table {
+    border: 1px solid rgb(3, 63, 3);
+}
+.right_text{
+    text-align: right;
+    padding: 0 1vw 0 1vw;
+}
+.delete_link{
+    color: #551A8B;
+}
+.delete_link:active{
+    color: #fa3831;
+}

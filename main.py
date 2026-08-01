@@ -21,6 +21,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 oauth = OAuth(app)
 
+# Google Auth
 try:
     google = oauth.register(
         name="google",
@@ -32,6 +33,7 @@ try:
 except Exception as e:
     print(f"Failed to connect to google auth: {e}")
 
+# Database
 try:
     app.config.update(
         MAIL_SERVER="smtp.gmail.com",
@@ -71,6 +73,7 @@ def connect_to_database():
         email TEXT UNIQUE NOT NULL,
         password TEXT,
         google_id TEXT UNIQUE,
+        role TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -120,6 +123,23 @@ def alreay_logged_in():
         pass
     return False
 
+
+# Admin init
+conn = None
+cur = None
+try:
+    conn, cur = connect_to_database()
+    cur.execute("SELECT * FROM users WHERE role = 'admin'")
+    admin_exists = cur.fetchone()
+    print("FETCH RESULT:", admin_exists)
+    if not admin_exists or admin_exists[0] == 0:
+        username = os.getenv("ADMIN_USERNAME")
+        email = os.getenv("ADMIN_EMAIL")
+        hashed_password = generate_password_hash(os.getenv("ADMIN_PASSWORD"))
+        cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password, None, "admin"))
+        conn.commit()
+finally:
+    close_database(conn, cur)
 
 
 @app.route("/")
@@ -227,7 +247,7 @@ def signup_submit():
         if cur.fetchone() is not None:
             return redirect(url_for('signup', error="Username is already in use"))
 
-        cur.execute("INSERT INTO users (username, email, password, google_id) VALUES (%s, %s, %s, %s) RETURNING id", (username, email, hashed_password, None))
+        cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s) RETURNING id", (username, email, hashed_password, None, "user"))
         user_id = cur.fetchone()[0]
         print(conn)
         if conn:
@@ -266,7 +286,7 @@ def google_callback():
         if user is not None: # Already exists -> login
             user_id = user[0]
         else:
-            cur.execute("INSERT INTO users (username, email, password, google_id) VALUES (%s, %s, %s, %s) RETURNING id", (None, email, None, google_id))
+            cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s) RETURNING id", (None, email, None, google_id, "user"))
             user_id = cur.fetchone()[0]
     finally:
         if conn:
@@ -309,7 +329,7 @@ def home_user():
 
     user = get_user_from_user_id(data["user_id"])
 
-    username, email, created_at = user[1], user[2], user[5]
+    username, email, created_at = user[1], user[2], user[6]
     google_id = user[4]
 
     return safe_render_template("home_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at})
@@ -331,7 +351,7 @@ def settings():
         return redirect(url_for("login"))
     
     user = get_user_from_user_id(data["user_id"])
-    username, email, created_at = user[1], user[2], user[5]
+    username, email, created_at = user[1], user[2], user[6]
 
     return safe_render_template("settings_user.html", {"user_id" : data["user_id"], "username" : username, "email" : email, "created_at" : created_at, "error" : error, "success" : success})
 
@@ -342,7 +362,7 @@ def update_email():
         return redirect(url_for("login"))
     
     user = get_user_from_user_id(data["user_id"])
-    username, email, created_at, google_id = user[1], user[2], user[5], user[4]
+    username, email, created_at, google_id = user[1], user[2], user[6], user[4]
 
     if google_id:
         return redirect(url_for("settings", error="Cannot update email for this user (used OAuth 2.0)"))
@@ -382,7 +402,7 @@ def update_password():
         return redirect(url_for("login"))
     
     user = get_user_from_user_id(data["user_id"])
-    username, email, created_at, google_id = user[1], user[2], user[5], user[4]
+    username, email, created_at, google_id = user[1], user[2], user[6], user[4]
 
     if google_id:
         return redirect(url_for("settings", error="Cannot update password for this user (used OAuth 2.0)"))
@@ -537,7 +557,6 @@ def reset_password_link():
             return redirect(url_for('reset_password_link', token=raw_token, error="Something went wrong - not your fault( Try again!"))
     finally:
         close_database(conn, cur)
-    print("[DEBUG] completed")
     return redirect(url_for("password_was_reset"))
 
         
@@ -545,20 +564,55 @@ def reset_password_link():
 @app.route("/password_was_reset")
 def password_was_reset():
     return safe_render_template("password_was_reset.html")
-        
+
+def get_admin_user():
+    data = get_data_from_token()
+    if not data:
+        return None
+    user = get_user_from_user_id(data["user_id"])
+    if user is None or not user[5] == "admin":
+        return None
+    return user    
     
 @app.route("/admin")
 def admin():
-    error = request.args.get("error")
-    return safe_render_template("admin_login.html", {"error" : error})
-
-@app.route("/admin_login_submit", methods=["POST"])
-def admin_login_submit():
-    captcha_token = request.form.get("h-captcha-response")
-    if not captcha_token:
-                return redirect(url_for('admin', error="Please complete CAPTCHA"))
+    user = get_admin_user()
+    if not user:
+        return redirect(url_for("login"))
+    id, username, email, created_at = user[0], user[1], user[2], user[6]
     
-    if not verify_token(captcha_token):
-        return redirect(url_for('admin', error="CAPTCHA failed"))
+        
+    return safe_render_template("admin_dashboard.html", {"user_id" : id, "username" : username, "email" : email, "created_at" : created_at})
 
-    return "Haha you thought i coded this already, lol"
+@app.route("/admin/view_users")
+def view_users():
+    user = get_admin_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    offset, limit = request.args.get("offset", 0), min(request.args.get("limit", 50), 50)
+
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT id, username, email, google_id, role, created_at FROM users ORDER BY id DESC LIMIT %s OFFSET %s;", (limit, offset))
+        users = cur.fetchall()
+        return safe_render_template("view_users.html", {"users" : users})
+    finally:
+        close_database(conn, cur)
+
+
+@app.route("/delete_user/<int:id>", methods=["DELETE"])
+def delete_user(id):
+    user = get_admin_user()
+    if user:
+        try:
+            conn, cur = connect_to_database()
+            cur.execute("DELETE FROM users WHERE id = %s;", (id,))
+            if cur.rowcount == 0:
+                return "User not found", 404
+            conn.commit()
+            return "", 204
+        finally:
+            close_database(conn, cur)
+        
+    return "", 403
