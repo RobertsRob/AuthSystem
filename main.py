@@ -648,11 +648,5 @@ def update_role(id):
 
 
 
-
-
-
-
-
-if __name__ == "__main__":
-    init_admin()
-    app.run(host="0.0.0.0", port=5000, debug=app.debug)
+# Init admin
+init_admin()
