@@ -126,6 +126,7 @@ def alreay_logged_in():
 
 # Admin init
 def init_admin():
+    conn, cur = None, None
     try:
         conn, cur = connect_to_database()
         cur.execute("SELECT * FROM users WHERE role = 'admin'")
