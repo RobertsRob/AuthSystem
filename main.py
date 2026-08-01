@@ -232,7 +232,7 @@ def login_submit():
 
 
 @app.route("/signup_submit", methods=["POST"])
-@limiter.limit("5 per hour", deduct_when=is_failed_redirect)
+@limiter.limit("50 per hour", deduct_when=is_failed_redirect)
 def signup_submit():
     captcha_token = request.form.get("h-captcha-response")
     
@@ -266,9 +266,11 @@ def signup_submit():
 
         cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s) RETURNING id", (username, email, hashed_password, None, "user"))
         user_id = cur.fetchone()[0]
-        print(conn)
         if conn:
             conn.commit()
+    except psycopg.errors.UniqueViolation:
+        conn.rollback()
+        return redirect(url_for('signup', error="Email is already in use"))
     finally:
         close_database(conn, cur)
 
@@ -295,6 +297,7 @@ def google_callback():
     google_id = user_info["sub"]
     email = user_info["email"]
 
+    conn, cur = None, None
     try:
         conn, cur = connect_to_database()
         cur.execute("SELECT * FROM users WHERE google_id = (%s)", (google_id,)) 
@@ -303,6 +306,9 @@ def google_callback():
         if user is not None: # Already exists -> login
             user_id = user[0]
         else:
+            cur.execute("SELECT * FROM users WHERE email = (%s)", (email,))
+            if cur.fetchone() is not None:
+                return redirect(url_for('login', error="An account with this email already exists."))
             cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s) RETURNING id", (None, email, None, google_id, "user"))
             user_id = cur.fetchone()[0]
     finally:
