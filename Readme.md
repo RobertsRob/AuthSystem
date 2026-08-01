@@ -35,6 +35,7 @@ docker compose exec db pg_dump -U {user} {db_name} > backup.sql
 ## Routes
 *This part was written buy AI:*
 
+```
 GET  /                          → renders home page
 GET  /login                     → login page (redirects to /home_user if already logged in) [?error]
 GET  /signup                    → signup page (redirects to /home_user if already logged in) [?error]
@@ -62,3 +63,4 @@ GET    /admin                          → admin dashboard
 GET    /admin/view_users ?offset&limit → paginated user list (limit capped at 50)
 DELETE /delete_user/<int:id>           → deletes user by id
 PATCH  /update_role/<int:id>           → toggles role between "user" and "admin"
+```
