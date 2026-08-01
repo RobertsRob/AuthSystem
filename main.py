@@ -125,21 +125,20 @@ def alreay_logged_in():
 
 
 # Admin init
-conn = None
-cur = None
-try:
-    conn, cur = connect_to_database()
-    cur.execute("SELECT * FROM users WHERE role = 'admin'")
-    admin_exists = cur.fetchone()
-    print("FETCH RESULT:", admin_exists)
-    if not admin_exists or admin_exists[0] == 0:
-        username = os.getenv("ADMIN_USERNAME")
-        email = os.getenv("ADMIN_EMAIL")
-        hashed_password = generate_password_hash(os.getenv("ADMIN_PASSWORD"))
-        cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password, None, "admin"))
-        conn.commit()
-finally:
-    close_database(conn, cur)
+def init_admin():
+    try:
+        conn, cur = connect_to_database()
+        cur.execute("SELECT * FROM users WHERE role = 'admin'")
+        admin_exists = cur.fetchone()
+        print("FETCH RESULT:", admin_exists)
+        if not admin_exists or admin_exists[0] == 0:
+            username = os.getenv("ADMIN_USERNAME")
+            email = os.getenv("ADMIN_EMAIL")
+            hashed_password = generate_password_hash(os.getenv("ADMIN_PASSWORD"))
+            cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password, None, "admin"))
+            conn.commit()
+    finally:
+        close_database(conn, cur)
 
 
 @app.route("/")
@@ -631,4 +630,5 @@ def delete_user(id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    init_admin()
+    app.run(host="0.0.0.0", port=5000, debug=app.debug)
