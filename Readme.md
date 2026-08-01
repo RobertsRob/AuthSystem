@@ -7,7 +7,7 @@ This is a template for your projects which uses authentication system. This proj
 - View user, change email and password
 - Forgot password
 - Uses Google Auth and hCAPTCHA
-- Has basic Admin page
+- Has basic Admin page *(/admin)*
 - Checking whether username is availible
 - Rate limiting (in process)
 
