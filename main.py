@@ -308,7 +308,7 @@ def google_callback():
         else:
             cur.execute("SELECT * FROM users WHERE email = (%s)", (email,))
             if cur.fetchone() is not None:
-                return redirect(url_for('login', error="An account with this email already exists."))
+                return redirect(url_for('login', error="An account with this email already exists - using not Google Auth."))
             cur.execute("INSERT INTO users (username, email, password, google_id, role) VALUES (%s, %s, %s, %s, %s) RETURNING id", (None, email, None, google_id, "user"))
             user_id = cur.fetchone()[0]
     finally:
