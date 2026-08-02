@@ -390,3 +390,7 @@ a{
     width: 28%;
     text-align: left;
 }
+.center_object{
+    display: block;
+    justify-content: center;
+}
